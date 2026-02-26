@@ -2,7 +2,7 @@ import jax
 import jax.numpy as jnp
 from jax.sharding import PartitionSpec as P, reshard
 import numpy as np
-from functools import partial, lru_cache
+from functools import partial, lru_cache, wraps
 
 from .data import prep_data
 
@@ -69,9 +69,9 @@ def _block_matmul(M, b, col_major=False, axis_name="i", mode="lower"):
     return __block_matmul(M, b)
 
 
-block_matmul_hermitian = partial(_block_matmul, mode="hermitian")
-block_matmul_tril_forward = partial(_block_matmul, mode="lower")
-block_matmul_tril_backward = partial(_block_matmul, mode="upper")
+block_matmul_hermitian = wraps(_block_matmul)(partial(_block_matmul, mode="hermitian"))
+block_matmul_tril_forward = wraps(_block_matmul)(partial(_block_matmul, mode="lower"))
+block_matmul_tril_backward = wraps(_block_matmul)(partial(_block_matmul, mode="upper"))
 
 
 @partial(jax.jit, static_argnames=("col_major", "axis_name", "mode"))
