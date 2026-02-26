@@ -6,7 +6,7 @@ from functools import partial, lru_cache
 
 
 @lru_cache
-def prep_data(m, ndevices, col_major=False, axis_name="i"):
+def prep_data(m, ndevices, col_major=False):
     """
     prepare the internal datastructures for the lower-triangular 2d block-cyclic representation
 
