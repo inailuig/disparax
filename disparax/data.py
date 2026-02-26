@@ -141,8 +141,8 @@ def pack_blocks(M, bs, ndevices, col_major=False, axis_name="i"):
     return reshard(block_data, P(axis_name))
 
 
-@partial(jax.jit, static_argnames=("bs", "col_major", "axis_name"))
-def compute_blocks(f, x, bs, col_major=False, axis_name="i"):
+@partial(jax.jit, static_argnames=("bs", "col_major", "axis_name", "batch_size"))
+def compute_blocks(f, x, bs, col_major=False, axis_name="i", batch_size=0):
     """
     compute a symmetric/hermitian matrix A in blocks (lower triangular only)
     Args:
@@ -195,13 +195,13 @@ def compute_blocks(f, x, bs, col_major=False, axis_name="i"):
         ij = jnp.array(ij_padded.reshape(-1, ndevices, 2))[:, d]
         pad_mask = jnp.array(pad_mask_padded.reshape(-1, ndevices))[:, d]
 
-        # TODO use select instead of mul ?
-        def _f(i, j, m):
+        def _f(args):
+            i, j, m = args
             xi = jax.tree.map(lambda x: x[i], x_blocks)
             xj = jax.tree.map(lambda x: x[j], x_blocks)
             res = f(xi, xj)
             return jax.tree.map(lambda r: jnp.where(m, r, jnp.zeros_like(r)), res)
 
-        return jax.vmap(_f)(*ij.T, pad_mask)
+        return jax.lax.map(_f, (*ij.T, pad_mask), batch_size=batch_size)
 
     return _compute_blocks(f, x)
